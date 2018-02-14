@@ -1,0 +1,22 @@
+<resources>
+    <string name="app_name">MemoryLocker</string>
+    <string name="button">Submit!</string>
+    <string name="defaultAnswer">Your answer...</string>
+    <string name="rightAnswer">Right answer!</string>
+    <string name="wrongAnswer">Wrong answer!</string>
+    <string name="aboutTitle">About</string>
+    <string name="aboutMessage">Created by Pavel Dušek, 2018
+        Source code may by fount at http://github.com/PavelDusek/
+        under CC BY-NC-SA 3.0 licence. Import file should be csv file with columns "Questions" and "Answers". Examples may be found at http://github.com/PavelDusek
+    </string>
+    <string name="addItemTitle">Add item…</string>
+    <string name="addItemPositiveButton">Add item</string>
+    <string name="cancel">Cancel</string>
+    <string name="importItemsTitle">Import items…</string>
+    <string name="exportItemsTitle">Export items…</string>
+    <string name="newQuestion">New question…</string>
+    <string name="newAnswer">Its answer…</string>
+    <string name="itemAdded">Item added.</string>
+    <string name="itemAddingFailed">Adding item failed.</string>
+    <string name="todo">This feature does not work yet. It will be added in future versions.</string>
+</resources>
