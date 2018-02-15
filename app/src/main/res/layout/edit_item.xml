@@ -6,23 +6,23 @@
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/newQuestion"
+        android:id="@+id/editQuestion"
         android:inputType="text"
         android:layout_marginTop="16dp"
         android:layout_marginLeft="4dp"
         android:layout_marginRight="4dp"
         android:layout_marginBottom="4dp"
-        android:hint="@string/newQuestion"
+        android:hint="@string/editQuestion"
         />
     <EditText
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:id="@+id/newAnswer"
+        android:id="@+id/editAnswer"
         android:inputType="textShortMessage"
         android:layout_marginTop="16dp"
         android:layout_marginLeft="4dp"
         android:layout_marginRight="4dp"
         android:layout_marginBottom="4dp"
-        android:hint="@string/newAnswer"
+        android:hint="@string/editAnswer"
         />
 </LinearLayout>

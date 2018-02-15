@@ -1,9 +1,5 @@
 <resources>
     <string name="app_name">MemoryLocker</string>
-    <string name="button">Submit!</string>
-    <string name="defaultAnswer">Your answer...</string>
-    <string name="rightAnswer">Right answer!</string>
-    <string name="wrongAnswer">Wrong answer!</string>
     <string name="aboutTitle">About</string>
     <string name="aboutMessage">Created by Pavel Dušek, 2018
         Source code may by fount at http://github.com/PavelDusek/
@@ -22,4 +18,47 @@
     <string name="setTimerPositiveButton">Save timer</string>
     <string name="timerSaved">Timer saved.</string>
     <string name="todo">This feature does not work yet. It will be added in future versions.</string>
+
+    <string name="editItemTitle">Edit item…</string>
+    <string name="editQuestion">edit question</string>
+    <string name="editAnswer">edit answer</string>
+    <string name="itemEdited">Item edited.</string>
+    <string name="itemEditFailed">Item edit failed.</string>
+    <string name="editItemPositiveButton">Save</string>
+    <string name="deleteItem">Delete item</string>
+    <string name="itemDeleted">Item deleted.</string>
+    <string name="itemDeleteFailed">Deleting item failed.</string>
+
+    <string name="monday">monday</string>
+    <string name="tuesday">tuesday</string>
+    <string name="wednesday">wednesday</string>
+    <string name="thursday">thursday</string>
+    <string name="friday">friday</string>
+    <string name="saturday">saturday</string>
+    <string name="sunday">sunday</string>
+    <string name="hour00">00:00</string>
+    <string name="hour01">01:00</string>
+    <string name="hour02">02:00</string>
+    <string name="hour03">03:00</string>
+    <string name="hour04">04:00</string>
+    <string name="hour05">05:00</string>
+    <string name="hour06">06:00</string>
+    <string name="hour07">07:00</string>
+    <string name="hour08">08:00</string>
+    <string name="hour09">09:00</string>
+    <string name="hour10">10:00</string>
+    <string name="hour11">11:00</string>
+    <string name="hour12">12:00</string>
+    <string name="hour13">13:00</string>
+    <string name="hour14">14:00</string>
+    <string name="hour15">15:00</string>
+    <string name="hour16">16:00</string>
+    <string name="hour17">17:00</string>
+    <string name="hour18">18:00</string>
+    <string name="hour19">19:00</string>
+    <string name="hour20">20:00</string>
+    <string name="hour21">21:00</string>
+    <string name="hour22">22:00</string>
+    <string name="hour23">23:00</string>
+
 </resources>

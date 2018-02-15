@@ -1,8 +1,10 @@
 package info.duskovi.pavel.memorylocker;
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
 import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -37,8 +39,13 @@ import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.Map;
 import java.util.Random;
 
 
@@ -112,8 +119,7 @@ public class Locker extends AppCompatActivity {
             //database.execSQL("DROP TABLE items");
             database.execSQL("CREATE TABLE IF NOT EXISTS items (question VARCHAR, answer VARCHAR)");
             //databaseStartValues();
-            items = getItems();
-            questions = getQuestions();
+            updateItems();
         } catch (android.database.SQLException e) {
             databaseError();
             e.printStackTrace();
@@ -121,26 +127,71 @@ public class Locker extends AppCompatActivity {
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
-        updateItemsListView();
 
         /*********/
         /* TIMER */
         /*********/
         setDefaultSharedPreferences();
-        //runHandler();
+        setAlarm();
     }
 
-    public void runHandler() {
-        final Handler handler = new Handler();
-        Runnable run = new Runnable() {
-            @Override
-            public void run() {
-                handler.postDelayed(this, 60 * 60 * 1000); //run every hour
-                Calendar calendar = Calendar.getInstance();
-                int dayOfweek = calendar.get(Calendar.DAY_OF_WEEK);
+    public void setAlarm() {
+        Intent intent = new Intent(this, LockerBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 0, intent, 0);
+        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        alarmManager.cancel(pendingIntent); //cancel if this has been run previously
+        Calendar nextRun = Calendar.getInstance();
+        nextRun.set(Calendar.HOUR_OF_DAY, nextRun.get(Calendar.HOUR_OF_DAY) + 1);
+        nextRun.set(Calendar.MINUTE, 0);
+        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), AlarmManager.INTERVAL_HOUR, pendingIntent);
+
+        /*
+        HashMap<String, Boolean> days = new HashMap<String, Boolean>();
+        HashMap<String, Boolean> times = new HashMap<String, Boolean>();
+        days.put("monday", monday); days.put("tuesday", tuesday); days.put("wednesday", wednesday); days.put("thursday", thursday); days.put("friday", friday); days.put("saturday", saturday); days.put("sunday", sunday);
+        times.put("hour00", hour00); times.put("hour01", hour01); times.put("hour02", hour02); times.put("hour03", hour03); times.put("hour04", hour04); times.put("hour05", hour05); times.put("hour06", hour06); times.put("hour07", hour07); times.put("hour08", hour08); times.put("hour09", hour09); times.put("hour10", hour10); times.put("hour11", hour11); times.put("hour12", hour12); times.put("hour13", hour13); times.put("hour14", hour14); times.put("hour15", hour15); times.put("hour16", hour16); times.put("hour17", hour17); times.put("hour18", hour18); times.put("hour19", hour19); times.put("hour20", hour20); times.put("hour21", hour21); times.put("hour22", hour22); times.put("hour23", hour23);
+
+        //Cancels all alarms and sets the alarms where appropriate (based on days and times)
+        int daysCounter = 0;
+        Iterator daysIterator = days.entrySet().iterator();
+        while(daysIterator.hasNext()) {
+            Map.Entry<String, Boolean> dayPair = (Map.Entry<String, Boolean>) daysIterator.next();
+            String dayName = dayPair.getKey();
+            Boolean day = dayPair.getValue();
+
+            int timesCounter = 0;
+            Iterator timesIterator = times.entrySet().iterator();
+            while(timesIterator.hasNext()) {
+                Map.Entry<String, Boolean> timePair = (Map.Entry<String, Boolean>) timesIterator.next();
+                String timeName = timePair.getKey();
+                Boolean time = timePair.getValue();
+
+                //create Intent to communicate with AlarmManager
+                Intent intent = new Intent(this, LockerBroadcastReceiver.class);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(
+                        this.getApplicationContext(),
+                        (daysCounter * 24)+timesCounter,
+                        intent,
+                        0
+                );
+                AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+                //first cancel the alarm (if it had been set earlier)!!!
+                alarmManager.cancel(pendingIntent);
+
+                //set the alarm if appropriate
+                if (day && time) {
+                    alarmManager.setInexactRepeating();
+                    alarmManager.set(AlarmManager.INTERVAL_HOUR)
+
+                }
+                timesIterator.remove();
+                timesCounter++;
             }
-        };
-        handler.post(run);
+            daysIterator.remove();
+            daysCounter++;
+        }
+        */
+
     }
     private void showAddItemAlert() {
         LayoutInflater layoutInflater = getLayoutInflater();
@@ -153,11 +204,15 @@ public class Locker extends AppCompatActivity {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
                         try {
-                            insertIntoDatabase(new Item(((EditText) addItemView.findViewById(R.id.newQuestion)).getText().toString(), ((EditText) addItemView.findViewById(R.id.newAnswer)).getText().toString()));
-                            items = getItems();
-                            questions = getQuestions();
+                            insertIntoDatabase(
+                                    new Item(
+                                            getNewRowid(),
+                                            ((EditText) addItemView.findViewById(R.id.newQuestion)).getText().toString(),
+                                            ((EditText) addItemView.findViewById(R.id.newAnswer)).getText().toString()
+                                    )
+                            );
                             Log.i("Info", String.format("Question size: %d", questions.size()));
-                            updateItemsListView();
+                            updateItems();
                             Toast.makeText(getApplicationContext(), R.string.itemAdded, Toast.LENGTH_SHORT).show();
                         } catch (android.database.SQLException e) {
                             e.printStackTrace();
@@ -170,11 +225,7 @@ public class Locker extends AppCompatActivity {
                 .setNegativeButton(R.string.cancel, null)
                 .show();
     }
-
     private void showSetTimerAlert() {
-
-
-
         LayoutInflater layoutInflater = getLayoutInflater();
         final View setTimerView = layoutInflater.inflate(R.layout.set_timer, null);
         ((CheckBox) setTimerView.findViewById(R.id.MondayCheckBox)).setChecked(monday);
@@ -298,16 +349,86 @@ public class Locker extends AppCompatActivity {
                 )
                 .show();
     }
+    private void showEditItemAlert(final int position) {
+        LayoutInflater layoutInflater = getLayoutInflater();
+        final View editItemView = layoutInflater.inflate(R.layout.edit_item, null);
+        final Item currentItem = items.get(position);
+        final EditText editQuestionEditText = (EditText) editItemView.findViewById(R.id.editQuestion);
+        final EditText editAnswerEditText = (EditText) editItemView.findViewById(R.id.editAnswer);
+        editQuestionEditText.setText(currentItem.question);
+        editAnswerEditText.setText(currentItem.answer);
+
+        AlertDialog editItemAlert = new AlertDialog.Builder(this)
+                .setIcon(android.R.drawable.ic_menu_edit)
+                .setTitle(R.string.editItemTitle)
+                .setView(editItemView)
+                .setPositiveButton(R.string.editItemPositiveButton, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+                        try {
+                            editDatabase(
+                                    new Item(
+                                            currentItem.rowid,
+                                            ((EditText) editItemView.findViewById(R.id.editQuestion)).getText().toString(),
+                                            ((EditText) editItemView.findViewById(R.id.editAnswer)).getText().toString()
+                                    )
+                            );
+                            Log.i("Info", String.format("Question size: %d", questions.size()));
+                            updateItems();
+                            Toast.makeText(getApplicationContext(), R.string.itemEdited, Toast.LENGTH_SHORT).show();
+                        } catch (android.database.SQLException e) {
+                            e.printStackTrace();
+                            databaseError();
+                            Log.e("Error", e.getMessage());
+                            Toast.makeText(getApplicationContext(), R.string.itemEditFailed, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNeutralButton(R.string.deleteItem, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int id) {
+                        try {
+                            deleteFromDatabase(currentItem.rowid);
+                            Log.i("Info", String.format("Question size: %d", questions.size()));
+                            updateItems();
+                            Toast.makeText(getApplicationContext(), R.string.itemDeleted, Toast.LENGTH_SHORT).show();
+                        } catch (android.database.SQLException e) {
+                            e.printStackTrace();
+                            databaseError();
+                            Log.e("Error", e.getMessage());
+                            Toast.makeText(getApplicationContext(), R.string.itemDeleteFailed, Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
     private void insertIntoDatabase(Item item) {
         database.execSQL(
                 String.format(
-                   "INSERT INTO items (question, answer) VALUES (%s, %s)",
+                   "INSERT INTO items (rowid, question, answer) VALUES (%d, %s, %s)",
+                   item.rowid,
                    DatabaseUtils.sqlEscapeString(item.question),
                    DatabaseUtils.sqlEscapeString(item.answer)
                 )
         );
     }
-    private void updateItemsListView() {
+    private void editDatabase(Item item) {
+        database.execSQL(
+                String.format(
+                        "UPDATE items SET question = %s, answer = %s WHERE rowid = %d",
+                        DatabaseUtils.sqlEscapeString(item.question),
+                        DatabaseUtils.sqlEscapeString(item.answer),
+                        item.rowid
+                )
+        );
+    }
+    private void deleteFromDatabase(final int rowid) {
+        database.execSQL( String.format("DELETE FROM items WHERE rowid = %d", rowid));
+    }
+    private void updateItems() {
+        items = getItems();
+        questions = getQuestions();
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, questions);
         itemsListView.setAdapter(arrayAdapter);
         itemsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -316,7 +437,25 @@ public class Locker extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), String.format("%s: %s", items.get(position).question, items.get(position).answer), Toast.LENGTH_LONG).show();
             }
         });
+        itemsListView.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+                showEditItemAlert(position);
+                return true;
+            }
+        });
     }
+
+    private int getNewRowid() {
+        int max = 0;
+        int itemRowid;
+        for (int i = 0; i < items.size(); i++) {
+            itemRowid = items.get(i).rowid;
+            if (max < itemRowid) max = itemRowid;
+        }
+        return max + 1;
+    }
+
     private void setDefaultSharedPreferences() {
         sharedPreferences = this.getSharedPreferences("info.duskovi.pavel.memorylocker", Context.MODE_PRIVATE);
         //set default values:
@@ -355,13 +494,14 @@ public class Locker extends AppCompatActivity {
     }
     private ArrayList<Item> getItems() {
         ArrayList<Item> itemsArrayList = new ArrayList<Item>();
-        Cursor c = database.rawQuery("SELECT * FROM items", null);
+        Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
         int questionIndex = c.getColumnIndex("question");
         int answerIndex = c.getColumnIndex("answer");
+        int rowidIndex = c.getColumnIndex("rowid");
 
         for (int i = 0; i < c.getCount(); i++) {
             c.moveToPosition(i);
-            item = new Item(c.getString(questionIndex), c.getString(answerIndex));
+            item = new Item(c.getInt(rowidIndex), c.getString(questionIndex), c.getString(answerIndex));
             itemsArrayList.add(item);
         }
         Log.i("Info", String.format("Items length: %d", itemsArrayList.size()) );
@@ -369,13 +509,14 @@ public class Locker extends AppCompatActivity {
     }
     private ArrayList<String> getQuestions() {
         ArrayList<String> questionsArrayList = new ArrayList<String>();
-        Cursor c = database.rawQuery("SELECT * FROM items", null);
+        Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
         int questionIndex = c.getColumnIndex("question");
         int answerIndex = c.getColumnIndex("answer");
+        int rowidIndex = c.getColumnIndex("rowid");
 
         for (int i = 0; i < c.getCount(); i++) {
             c.moveToPosition(i);
-            item = new Item(c.getString(questionIndex), c.getString(answerIndex));
+            item = new Item(c.getInt(rowidIndex), c.getString(questionIndex), c.getString(answerIndex));
             questionsArrayList.add(item.question);
         }
         Log.i("Info", String.format("Questions length: %d", questionsArrayList.size()) );
@@ -421,7 +562,7 @@ public class Locker extends AppCompatActivity {
                 "přikázání.')");
         database.execSQL("INSERT INTO items (question, answer) VALUES ('2 Timoteovi 3:16-17', '16 Veškeré Písmo pochází z Božího Ducha a je dobré k učení, k usvědčování, k nápravě, k výchově ve\n" +
                 "spravedlnosti, 17 aby Boží člověk byl náležitě připraven ke každému dobrému činu')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Jošua 1:8', 'Kniha tohoto zákona ať se nevzdálí od tvých úst. Rozjímej nad ním ve dne v noci, abys mohl bedlivě plnit\n" +
+        database.execSQL("INSERT INTO items (question, answer) VALUES ('Jozue 1:8', 'Kniha tohoto zákona ať se nevzdálí od tvých úst. Rozjímej nad ním ve dne v noci, abys mohl bedlivě plnit\n" +
                 "vše, co je v něm zapsáno. Potom tě bude na tvé cestě provázet zdar, potom budeš jednat prozíravě.')");
         database.execSQL("INSERT INTO items (question, answer) VALUES ('Jan 16:24', 'Až dosud jste o nic neprosili v mém jménu. Proste a dostanete, aby vaše radost byla plná.')");
         database.execSQL("INSERT INTO items (question, answer) VALUES ('Filipským 4:6-7', '6 Netrapte se žádnou starostí, ale v každé modlitbě a prosbě děkujte a předkládejte své žádosti Bohu. 7 A\n" +
@@ -430,22 +571,8 @@ public class Locker extends AppCompatActivity {
         database.execSQL("INSERT INTO items (question, answer) VALUES ('Židům 12:11', 'Přísná výchova se ovšem v tu chvíli nikdy nezdá příjemná, nýbrž krušná, později však přináší ovoce pokoje\n" +
                 "a spravedlnost těm, kdo jí prošli.')");
     }
-    public void validate(View view) {
-        Toast.makeText(
-                getApplicationContext(),
-                String.format("Question: %s\nAnswer: %s", item.question, item.answer),
-                Toast.LENGTH_LONG).show();
-        newItem();
-    }
     private void databaseError() {
         if (database.isOpen()) database.close();
-    }
-    public void newItem() {
-        if (items.size() > 0) {
-            int counter = random.nextInt(items.size());
-            item = items.get(counter);
-            question.setText(item.question);
-        }
     }
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
