@@ -1,9 +1,6 @@
 package info.duskovi.pavel.memorylocker;
-
-import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -24,14 +21,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
 import android.widget.Toast;
-import android.os.Handler;
 
 import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
@@ -39,23 +32,13 @@ import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
-
+import java.util.Locale;
 
 public class Locker extends AppCompatActivity {
     ArrayList<String> questions;
     ArrayList<Item> items;
     ListView itemsListView;
     Item item;
-    Random random;
-    TextView question;
     SQLiteDatabase database;
     NotificationCompat.Builder notification;
     SharedPreferences sharedPreferences;
@@ -112,13 +95,11 @@ public class Locker extends AppCompatActivity {
         items = new ArrayList<Item>();
         questions = new ArrayList<String>();
         itemsListView = (ListView) findViewById(R.id.itemsListView);
-        random = new Random();
-
         try {
             database = this.openOrCreateDatabase("MemoryLockerItems", MODE_PRIVATE, null);
-            //database.execSQL("DROP TABLE items");
+            database.execSQL("DROP TABLE items");
             database.execSQL("CREATE TABLE IF NOT EXISTS items (question VARCHAR, answer VARCHAR)");
-            //databaseStartValues();
+            databaseStartValues();
             updateItems();
         } catch (android.database.SQLException e) {
             databaseError();
@@ -139,11 +120,14 @@ public class Locker extends AppCompatActivity {
         Intent intent = new Intent(this, LockerBroadcastReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 0, intent, 0);
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        alarmManager.cancel(pendingIntent); //cancel if this has been run previously
-        Calendar nextRun = Calendar.getInstance();
-        nextRun.set(Calendar.HOUR_OF_DAY, nextRun.get(Calendar.HOUR_OF_DAY) + 1);
-        nextRun.set(Calendar.MINUTE, 0);
-        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), AlarmManager.INTERVAL_HOUR, pendingIntent);
+        //alarmManager.cancel(pendingIntent); //cancel if this has been run previously
+        //Calendar nextRun = Calendar.getInstance();
+        //nextRun.set(Calendar.HOUR_OF_DAY, nextRun.get(Calendar.HOUR_OF_DAY) + 1);
+        //nextRun.set(Calendar.MINUTE, 0);
+        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5 * 1000,AlarmManager.INTERVAL_FIFTEEN_MINUTES, pendingIntent);
+
+
+        //alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), AlarmManager.INTERVAL_HOUR, pendingIntent);
 
         /*
         HashMap<String, Boolean> days = new HashMap<String, Boolean>();
@@ -406,6 +390,7 @@ public class Locker extends AppCompatActivity {
     private void insertIntoDatabase(Item item) {
         database.execSQL(
                 String.format(
+                   Locale.US,
                    "INSERT INTO items (rowid, question, answer) VALUES (%d, %s, %s)",
                    item.rowid,
                    DatabaseUtils.sqlEscapeString(item.question),
@@ -416,6 +401,7 @@ public class Locker extends AppCompatActivity {
     private void editDatabase(Item item) {
         database.execSQL(
                 String.format(
+                        Locale.US,
                         "UPDATE items SET question = %s, answer = %s WHERE rowid = %d",
                         DatabaseUtils.sqlEscapeString(item.question),
                         DatabaseUtils.sqlEscapeString(item.answer),
@@ -424,7 +410,7 @@ public class Locker extends AppCompatActivity {
         );
     }
     private void deleteFromDatabase(final int rowid) {
-        database.execSQL( String.format("DELETE FROM items WHERE rowid = %d", rowid));
+        database.execSQL( String.format(Locale.US, "DELETE FROM items WHERE rowid = %d", rowid));
     }
     private void updateItems() {
         items = getItems();
@@ -505,6 +491,7 @@ public class Locker extends AppCompatActivity {
             itemsArrayList.add(item);
         }
         Log.i("Info", String.format("Items length: %d", itemsArrayList.size()) );
+        c.close();
         return itemsArrayList;
     }
     private ArrayList<String> getQuestions() {
@@ -520,6 +507,7 @@ public class Locker extends AppCompatActivity {
             questionsArrayList.add(item.question);
         }
         Log.i("Info", String.format("Questions length: %d", questionsArrayList.size()) );
+        c.close();
         return questionsArrayList;
     }
     private void databaseStartValues() {
