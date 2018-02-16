@@ -32,6 +32,7 @@ import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Locale;
 
 public class Locker extends AppCompatActivity {
@@ -92,8 +93,8 @@ public class Locker extends AppCompatActivity {
         Intent intent = new Intent(getApplicationContext(), Locker.class);
         notification = new NotificationCompat.Builder(this);
         notification.setAutoCancel(true);
-        items = new ArrayList<Item>();
-        questions = new ArrayList<String>();
+        items = new ArrayList<>();
+        questions = new ArrayList<>();
         itemsListView = (ListView) findViewById(R.id.itemsListView);
         try {
             database = this.openOrCreateDatabase("MemoryLockerItems", MODE_PRIVATE, null);
@@ -120,11 +121,13 @@ public class Locker extends AppCompatActivity {
         Intent intent = new Intent(this, LockerBroadcastReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 0, intent, 0);
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        //alarmManager.cancel(pendingIntent); //cancel if this has been run previously
-        //Calendar nextRun = Calendar.getInstance();
-        //nextRun.set(Calendar.HOUR_OF_DAY, nextRun.get(Calendar.HOUR_OF_DAY) + 1);
-        //nextRun.set(Calendar.MINUTE, 0);
-        alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 5 * 1000,AlarmManager.INTERVAL_FIFTEEN_MINUTES, pendingIntent);
+        alarmManager.cancel(pendingIntent); //cancel if this has been run previously
+        Calendar nextRun = Calendar.getInstance();
+        nextRun.setTimeInMillis(System.currentTimeMillis());
+        nextRun.set(Calendar.HOUR_OF_DAY, nextRun.get(Calendar.HOUR_OF_DAY) + 1);
+        nextRun.set(Calendar.MINUTE, 0);
+        nextRun.set(Calendar.SECOND, 0);
+        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), 1000 * 60 * 60, pendingIntent);
 
 
         //alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), AlarmManager.INTERVAL_HOUR, pendingIntent);
@@ -415,7 +418,7 @@ public class Locker extends AppCompatActivity {
     private void updateItems() {
         items = getItems();
         questions = getQuestions();
-        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, questions);
+        ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, questions);
         itemsListView.setAdapter(arrayAdapter);
         itemsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -479,7 +482,7 @@ public class Locker extends AppCompatActivity {
 
     }
     private ArrayList<Item> getItems() {
-        ArrayList<Item> itemsArrayList = new ArrayList<Item>();
+        ArrayList<Item> itemsArrayList = new ArrayList<>();
         Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
         int questionIndex = c.getColumnIndex("question");
         int answerIndex = c.getColumnIndex("answer");
@@ -495,7 +498,7 @@ public class Locker extends AppCompatActivity {
         return itemsArrayList;
     }
     private ArrayList<String> getQuestions() {
-        ArrayList<String> questionsArrayList = new ArrayList<String>();
+        ArrayList<String> questionsArrayList = new ArrayList<>();
         Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
         int questionIndex = c.getColumnIndex("question");
         int answerIndex = c.getColumnIndex("answer");
@@ -555,7 +558,7 @@ public class Locker extends AppCompatActivity {
         database.execSQL("INSERT INTO items (question, answer) VALUES ('Jan 16:24', 'Až dosud jste o nic neprosili v mém jménu. Proste a dostanete, aby vaše radost byla plná.')");
         database.execSQL("INSERT INTO items (question, answer) VALUES ('Filipským 4:6-7', '6 Netrapte se žádnou starostí, ale v každé modlitbě a prosbě děkujte a předkládejte své žádosti Bohu. 7 A\n" +
                 "pokoj Boží, převyšující každé pomyšlení, bude střežit vaše srdce i mysl v Kristu Ježíši.')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Jakub 1:22', 'Podle slova však také jednejte, nebuďte jen posluchači to byste klamali sami sebe! – to byste klamali sami sebe!')");
+        database.execSQL("INSERT INTO items (question, answer) VALUES ('Jakub 1:22', 'Podle slova však také jednejte, nebuďte jen posluchači – to byste klamali sami sebe!')");
         database.execSQL("INSERT INTO items (question, answer) VALUES ('Židům 12:11', 'Přísná výchova se ovšem v tu chvíli nikdy nezdá příjemná, nýbrž krušná, později však přináší ovoce pokoje\n" +
                 "a spravedlnost těm, kdo jí prošli.')");
     }
