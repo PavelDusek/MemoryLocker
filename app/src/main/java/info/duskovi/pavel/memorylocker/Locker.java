@@ -43,6 +43,7 @@ public class Locker extends AppCompatActivity {
     SQLiteDatabase database;
     NotificationCompat.Builder notification;
     SharedPreferences sharedPreferences;
+    // TODO get rid of those variables:
     boolean monday, tuesday, wednesday, thursday, friday, saturday, sunday;
     boolean
             hour00, hour01, hour02, hour03, hour04, hour05, hour06, hour07, hour08, hour09, hour10, hour11,
@@ -118,6 +119,9 @@ public class Locker extends AppCompatActivity {
     }
 
     public void setAlarm() {
+        /**
+         * TODO
+         */
         Intent intent = new Intent(this, LockerBroadcastReceiver.class);
         PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 0, intent, 0);
         AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
@@ -128,59 +132,11 @@ public class Locker extends AppCompatActivity {
         nextRun.set(Calendar.MINUTE, 0);
         nextRun.set(Calendar.SECOND, 0);
         alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), 1000 * 60 * 60, pendingIntent);
-
-
-        //alarmManager.setInexactRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), AlarmManager.INTERVAL_HOUR, pendingIntent);
-
-        /*
-        HashMap<String, Boolean> days = new HashMap<String, Boolean>();
-        HashMap<String, Boolean> times = new HashMap<String, Boolean>();
-        days.put("monday", monday); days.put("tuesday", tuesday); days.put("wednesday", wednesday); days.put("thursday", thursday); days.put("friday", friday); days.put("saturday", saturday); days.put("sunday", sunday);
-        times.put("hour00", hour00); times.put("hour01", hour01); times.put("hour02", hour02); times.put("hour03", hour03); times.put("hour04", hour04); times.put("hour05", hour05); times.put("hour06", hour06); times.put("hour07", hour07); times.put("hour08", hour08); times.put("hour09", hour09); times.put("hour10", hour10); times.put("hour11", hour11); times.put("hour12", hour12); times.put("hour13", hour13); times.put("hour14", hour14); times.put("hour15", hour15); times.put("hour16", hour16); times.put("hour17", hour17); times.put("hour18", hour18); times.put("hour19", hour19); times.put("hour20", hour20); times.put("hour21", hour21); times.put("hour22", hour22); times.put("hour23", hour23);
-
-        //Cancels all alarms and sets the alarms where appropriate (based on days and times)
-        int daysCounter = 0;
-        Iterator daysIterator = days.entrySet().iterator();
-        while(daysIterator.hasNext()) {
-            Map.Entry<String, Boolean> dayPair = (Map.Entry<String, Boolean>) daysIterator.next();
-            String dayName = dayPair.getKey();
-            Boolean day = dayPair.getValue();
-
-            int timesCounter = 0;
-            Iterator timesIterator = times.entrySet().iterator();
-            while(timesIterator.hasNext()) {
-                Map.Entry<String, Boolean> timePair = (Map.Entry<String, Boolean>) timesIterator.next();
-                String timeName = timePair.getKey();
-                Boolean time = timePair.getValue();
-
-                //create Intent to communicate with AlarmManager
-                Intent intent = new Intent(this, LockerBroadcastReceiver.class);
-                PendingIntent pendingIntent = PendingIntent.getBroadcast(
-                        this.getApplicationContext(),
-                        (daysCounter * 24)+timesCounter,
-                        intent,
-                        0
-                );
-                AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-                //first cancel the alarm (if it had been set earlier)!!!
-                alarmManager.cancel(pendingIntent);
-
-                //set the alarm if appropriate
-                if (day && time) {
-                    alarmManager.setInexactRepeating();
-                    alarmManager.set(AlarmManager.INTERVAL_HOUR)
-
-                }
-                timesIterator.remove();
-                timesCounter++;
-            }
-            daysIterator.remove();
-            daysCounter++;
-        }
-        */
-
     }
     private void showAddItemAlert() {
+        /**
+         * TODO
+         */
         LayoutInflater layoutInflater = getLayoutInflater();
         final View addItemView = layoutInflater.inflate(R.layout.add_item, null);
         AlertDialog addItemAlert = new AlertDialog.Builder(this)
@@ -213,6 +169,9 @@ public class Locker extends AppCompatActivity {
                 .show();
     }
     private void showSetTimerAlert() {
+        /**
+         * TODO
+         */
         LayoutInflater layoutInflater = getLayoutInflater();
         final View setTimerView = layoutInflater.inflate(R.layout.set_timer, null);
         ((CheckBox) setTimerView.findViewById(R.id.MondayCheckBox)).setChecked(monday);
@@ -324,6 +283,9 @@ public class Locker extends AppCompatActivity {
                 .show();
     }
     private void showAboutAlert() {
+        /**
+         * TODO
+         */
         new AlertDialog.Builder(this)
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .setTitle(R.string.aboutTitle)
@@ -337,6 +299,9 @@ public class Locker extends AppCompatActivity {
                 .show();
     }
     private void showEditItemAlert(final int position) {
+        /**
+         * TODO
+         */
         LayoutInflater layoutInflater = getLayoutInflater();
         final View editItemView = layoutInflater.inflate(R.layout.edit_item, null);
         final Item currentItem = items.get(position);
@@ -391,6 +356,9 @@ public class Locker extends AppCompatActivity {
                 .show();
     }
     private void insertIntoDatabase(Item item) {
+        /**
+         * TODO
+         */
         database.execSQL(
                 String.format(
                    Locale.US,
@@ -402,6 +370,9 @@ public class Locker extends AppCompatActivity {
         );
     }
     private void editDatabase(Item item) {
+        /**
+         * TODO
+         */
         database.execSQL(
                 String.format(
                         Locale.US,
@@ -413,9 +384,15 @@ public class Locker extends AppCompatActivity {
         );
     }
     private void deleteFromDatabase(final int rowid) {
+        /**
+         * TODO
+         */
         database.execSQL( String.format(Locale.US, "DELETE FROM items WHERE rowid = %d", rowid));
     }
     private void updateItems() {
+        /**
+         * TODO
+         */
         items = getItems();
         questions = getQuestions();
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, questions);
@@ -436,6 +413,9 @@ public class Locker extends AppCompatActivity {
     }
 
     private int getNewRowid() {
+        /**
+         * TODO
+         */
         int max = 0;
         int itemRowid;
         for (int i = 0; i < items.size(); i++) {
@@ -445,7 +425,11 @@ public class Locker extends AppCompatActivity {
         return max + 1;
     }
 
-    private void setDefaultSharedPreferences() {
+    protected void setDefaultSharedPreferences() {
+        /**
+         * TODO move this code to showSetTimerAlert
+         * TODO variables monday, ..., hour00,... are superfluous, get rid of them
+         */
         sharedPreferences = this.getSharedPreferences("info.duskovi.pavel.memorylocker", Context.MODE_PRIVATE);
         //set default values:
         monday = sharedPreferences.getBoolean("monday", false);
@@ -479,9 +463,12 @@ public class Locker extends AppCompatActivity {
         hour21 = sharedPreferences.getBoolean("hour21", false);
         hour22 = sharedPreferences.getBoolean("hour22", false);
         hour23 = sharedPreferences.getBoolean("hour23", false);
-
     }
+
     private ArrayList<Item> getItems() {
+        /**
+         * TODO
+         */
         ArrayList<Item> itemsArrayList = new ArrayList<>();
         Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
         int questionIndex = c.getColumnIndex("question");
@@ -498,6 +485,9 @@ public class Locker extends AppCompatActivity {
         return itemsArrayList;
     }
     private ArrayList<String> getQuestions() {
+        /**
+         * TODO
+         */
         ArrayList<String> questionsArrayList = new ArrayList<>();
         Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
         int questionIndex = c.getColumnIndex("question");
@@ -514,6 +504,9 @@ public class Locker extends AppCompatActivity {
         return questionsArrayList;
     }
     private void databaseStartValues() {
+        /**
+         * TODO
+         */
         //database.execSQL("INSERT INTO items (question, answer) VALUES ('milost (DE)', 'die Gnade')");
         //database.execSQL("INSERT INTO items (question, answer) VALUES ('blud (EN)', 'fallacy')");
         //database.execSQL("INSERT INTO items (question, answer) VALUES ('troufalost (EN)', 'audacity')");
@@ -563,6 +556,9 @@ public class Locker extends AppCompatActivity {
                 "a spravedlnost těm, kdo jí prošli.')");
     }
     private void databaseError() {
+        /**
+         * TODO
+         */
         if (database.isOpen()) database.close();
     }
     /**
