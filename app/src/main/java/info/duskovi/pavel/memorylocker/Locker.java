@@ -33,6 +33,7 @@ import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Iterator;
 import java.util.Locale;
 
 public class Locker extends AppCompatActivity {
@@ -76,7 +77,7 @@ public class Locker extends AppCompatActivity {
                 return true;
             case R.id.export_items:
                 Log.i("Menu", "exportItems");
-                Toast.makeText(getApplicationContext(), R.string.todo, Toast.LENGTH_SHORT).show();
+                showExportItemsAlert();
                 return true;
             case R.id.set_timer: showSetTimerAlert(); return true;
             case R.id.about:
@@ -99,9 +100,9 @@ public class Locker extends AppCompatActivity {
         itemsListView = (ListView) findViewById(R.id.itemsListView);
         try {
             database = this.openOrCreateDatabase("MemoryLockerItems", MODE_PRIVATE, null);
-            database.execSQL("DROP TABLE items");
+            //database.execSQL("DROP TABLE items");
             database.execSQL("CREATE TABLE IF NOT EXISTS items (question VARCHAR, answer VARCHAR)");
-            databaseStartValues();
+            //databaseStartValues();
             updateItems();
         } catch (android.database.SQLException e) {
             databaseError();
@@ -354,6 +355,54 @@ public class Locker extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
+    }
+
+    private void showImportItemsAlert() {
+        LayoutInflater layoutInflater = getLayoutInflater();
+        final View importItemsView = layoutInflater.inflate(R.layout.import_items, null);
+
+        new AlertDialog.Builder(this)
+                .setIcon(android.R.drawable.ic_input_add)
+                .setTitle(R.string.importItemsTitle)
+                .setView(importItemsView)
+                .setPositiveButton(R.string.importItemsPositiveButton, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+
+                    }
+                })
+                .setNegativeButton(R.string.importItemsNegativeButton, null)
+                .show();
+
+    }
+
+    private void importItems(String csv) {
+        String[] lines = csv.split("\\r?\\n");
+
+    }
+    private void showExportItemsAlert() {
+        LayoutInflater layoutInflater = getLayoutInflater();
+        final View exportItemsView = layoutInflater.inflate(R.layout.export_items, null);
+        final EditText exportItemsEditText = (EditText) exportItemsView.findViewById(R.id.exportItemsEditText);
+        exportItemsEditText.setText(exportItems());
+
+        AlertDialog exportItemAlert = new AlertDialog.Builder(this)
+                .setIcon(android.R.drawable.ic_menu_directions)
+                .setTitle(R.string.exportItemsViewTitle)
+                .setView(exportItemsView)
+                .setPositiveButton(R.string.exportItemsPositiveButton, null)
+                .show();
+    }
+
+    private String exportItems() {
+        ArrayList<Item> arrayList = getItems();
+        String csv = "question,answer\n";
+
+        for (Iterator<Item> iter = arrayList.iterator(); iter.hasNext(); ) {
+            Item item = iter.next();
+            csv += String.format(Locale.US, "\"%s\",\"%s\"\n", item.question, item.answer);
+        }
+        return csv;
     }
     private void insertIntoDatabase(Item item) {
         /**

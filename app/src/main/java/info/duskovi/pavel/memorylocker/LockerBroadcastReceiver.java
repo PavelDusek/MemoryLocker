@@ -34,10 +34,11 @@ public class LockerBroadcastReceiver extends BroadcastReceiver {
             Intent notificationIntent = new Intent(context.getApplicationContext(), Locker.class);
             PendingIntent pendingIntent = PendingIntent.getActivity(context.getApplicationContext(), randomItem.rowid, notificationIntent, 0);
             Notification notification = new Notification.Builder(context.getApplicationContext())
-                    .setContentTitle("MemoryLocker:\n" + randomItem.question)
-                    .setContentText("…\n…\n" + randomItem.answer)
+                    .setContentTitle("MemoryLocker")
+                    .setContentText(randomItem.question)
                     .setContentIntent(pendingIntent)
                     .setSmallIcon(android.R.drawable.sym_def_app_icon)
+                    .setStyle(new Notification.BigTextStyle().bigText(randomItem.answer))
                     .build();
             NotificationManager notificationManager = (NotificationManager) context.getSystemService(NOTIFICATION_SERVICE);
             notificationManager.notify(randomItem.rowid, notification);

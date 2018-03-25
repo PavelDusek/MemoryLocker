@@ -29,6 +29,16 @@
     <string name="itemDeleted">Item deleted.</string>
     <string name="itemDeleteFailed">Deleting item failed.</string>
 
+    <string name="exportItemsTextView">You can copy all this values and save where appropriate. This format is comma separated values (CSV).</string>
+    <string name="exportItemsViewTitle">Exported items:</string>
+    <string name="exportItemsPositiveButton">OK</string>
+
+    <string name="importItemsTextView">Paste in comma separated values (CSV) with header:
+    question,answer</string>
+    <string name="importItemsViewTitle">Import items</string>
+    <string name="importItemsPositiveButton">Import</string>
+    <string name="importItemsNegativeButton">Cancel</string>
+
     <string name="monday">monday</string>
     <string name="tuesday">tuesday</string>
     <string name="wednesday">wednesday</string>
