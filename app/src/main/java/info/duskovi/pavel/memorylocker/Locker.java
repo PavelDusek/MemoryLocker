@@ -1,14 +1,10 @@
 package info.duskovi.pavel.memorylocker;
-import android.app.AlarmManager;
 import android.app.AlertDialog;
-import android.app.PendingIntent;
-import android.content.Context;
+import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
@@ -21,7 +17,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
-import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.Toast;
@@ -32,7 +27,6 @@ import com.google.android.gms.appindexing.Thing;
 import com.google.android.gms.common.api.GoogleApiClient;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -41,14 +35,8 @@ public class Locker extends AppCompatActivity {
     ArrayList<Item> items;
     ListView itemsListView;
     Item item;
-    SQLiteDatabase database;
+    DatabaseAPI database;
     NotificationCompat.Builder notification;
-    SharedPreferences sharedPreferences;
-    // TODO get rid of those variables:
-    boolean monday, tuesday, wednesday, thursday, friday, saturday, sunday;
-    boolean
-            hour00, hour01, hour02, hour03, hour04, hour05, hour06, hour07, hour08, hour09, hour10, hour11,
-            hour12, hour13, hour14, hour15, hour16, hour17, hour18, hour19, hour20, hour21, hour22, hour23;
     private static final int uniqueID = 45612;
 
     /**
@@ -79,7 +67,6 @@ public class Locker extends AppCompatActivity {
                 Log.i("Menu", "exportItems");
                 showExportItemsAlert();
                 return true;
-            case R.id.set_timer: showSetTimerAlert(); return true;
             case R.id.about:
                 Log.i("Menu", "showAboutAlert");
                 showAboutAlert();
@@ -98,46 +85,15 @@ public class Locker extends AppCompatActivity {
         items = new ArrayList<>();
         questions = new ArrayList<>();
         itemsListView = (ListView) findViewById(R.id.itemsListView);
-        try {
-            database = this.openOrCreateDatabase("MemoryLockerItems", MODE_PRIVATE, null);
-            //database.execSQL("DROP TABLE items");
-            database.execSQL("CREATE TABLE IF NOT EXISTS items (question VARCHAR, answer VARCHAR)");
-            //databaseStartValues();
-            updateItems();
-        } catch (android.database.SQLException e) {
-            databaseError();
-            e.printStackTrace();
-        }
+        database = new DatabaseAPI(this);
+        updateItems();
+
         // ATTENTION: This was auto-generated to implement the App Indexing API.
         // See https://g.co/AppIndexing/AndroidStudio for more information.
         client = new GoogleApiClient.Builder(this).addApi(AppIndex.API).build();
+}
 
-        /*********/
-        /* TIMER */
-        /*********/
-        setDefaultSharedPreferences();
-        setAlarm();
-    }
-
-    public void setAlarm() {
-        /**
-         * TODO
-         */
-        Intent intent = new Intent(this, LockerBroadcastReceiver.class);
-        PendingIntent pendingIntent = PendingIntent.getBroadcast(this.getApplicationContext(), 0, intent, 0);
-        AlarmManager alarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
-        alarmManager.cancel(pendingIntent); //cancel if this has been run previously
-        Calendar nextRun = Calendar.getInstance();
-        nextRun.setTimeInMillis(System.currentTimeMillis());
-        nextRun.set(Calendar.HOUR_OF_DAY, nextRun.get(Calendar.HOUR_OF_DAY) + 1);
-        nextRun.set(Calendar.MINUTE, 0);
-        nextRun.set(Calendar.SECOND, 0);
-        alarmManager.setRepeating(AlarmManager.RTC_WAKEUP, nextRun.getTimeInMillis(), 1000 * 60 * 60, pendingIntent);
-    }
     private void showAddItemAlert() {
-        /**
-         * TODO
-         */
         LayoutInflater layoutInflater = getLayoutInflater();
         final View addItemView = layoutInflater.inflate(R.layout.add_item, null);
         AlertDialog addItemAlert = new AlertDialog.Builder(this)
@@ -147,146 +103,23 @@ public class Locker extends AppCompatActivity {
                 .setPositiveButton(R.string.addItemPositiveButton, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
-                        try {
-                            insertIntoDatabase(
-                                    new Item(
-                                            getNewRowid(),
-                                            ((EditText) addItemView.findViewById(R.id.newQuestion)).getText().toString(),
-                                            ((EditText) addItemView.findViewById(R.id.newAnswer)).getText().toString()
-                                    )
-                            );
-                            Log.i("Info", String.format("Question size: %d", questions.size()));
-                            updateItems();
-                            Toast.makeText(getApplicationContext(), R.string.itemAdded, Toast.LENGTH_SHORT).show();
-                        } catch (android.database.SQLException e) {
-                            e.printStackTrace();
-                            databaseError();
-                            Log.e("Error", e.getMessage());
-                            Toast.makeText(getApplicationContext(), R.string.itemAddingFailed, Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                })
-                .setNegativeButton(R.string.cancel, null)
-                .show();
-    }
-    private void showSetTimerAlert() {
-        /**
-         * TODO
-         */
-        LayoutInflater layoutInflater = getLayoutInflater();
-        final View setTimerView = layoutInflater.inflate(R.layout.set_timer, null);
-        ((CheckBox) setTimerView.findViewById(R.id.MondayCheckBox)).setChecked(monday);
-        ((CheckBox) setTimerView.findViewById(R.id.TuesdayCheckBox)).setChecked(tuesday);
-        ((CheckBox) setTimerView.findViewById(R.id.WednesdayCheckBox)).setChecked(wednesday);
-        ((CheckBox) setTimerView.findViewById(R.id.ThursdayCheckBox)).setChecked(thursday);
-        ((CheckBox) setTimerView.findViewById(R.id.FridayCheckBox)).setChecked(friday);
-        ((CheckBox) setTimerView.findViewById(R.id.SaturdayCheckBox)).setChecked(saturday);
-        ((CheckBox) setTimerView.findViewById(R.id.SundayCheckBox)).setChecked(sunday);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox00)).setChecked(hour00);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox01)).setChecked(hour01);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox02)).setChecked(hour02);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox03)).setChecked(hour03);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox04)).setChecked(hour04);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox05)).setChecked(hour05);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox06)).setChecked(hour06);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox07)).setChecked(hour07);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox08)).setChecked(hour08);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox09)).setChecked(hour09);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox10)).setChecked(hour10);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox11)).setChecked(hour11);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox12)).setChecked(hour12);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox13)).setChecked(hour13);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox14)).setChecked(hour14);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox15)).setChecked(hour15);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox16)).setChecked(hour16);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox17)).setChecked(hour17);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox18)).setChecked(hour18);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox19)).setChecked(hour19);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox20)).setChecked(hour20);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox21)).setChecked(hour21);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox22)).setChecked(hour22);
-        ((CheckBox) setTimerView.findViewById(R.id.CheckBox23)).setChecked(hour23);
-
-        AlertDialog setTimerAlert = new AlertDialog.Builder(this)
-                .setIcon(android.R.drawable.ic_menu_manage)
-                .setTitle(R.string.setTimerTitle)
-                .setView(setTimerView)
-                .setPositiveButton(R.string.setTimerPositiveButton, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int id) {
-                        monday = ((CheckBox) setTimerView.findViewById(R.id.MondayCheckBox)).isChecked();
-                        tuesday = ((CheckBox) setTimerView.findViewById(R.id.TuesdayCheckBox)).isChecked();
-                        wednesday = ((CheckBox) setTimerView.findViewById(R.id.WednesdayCheckBox)).isChecked();
-                        thursday = ((CheckBox) setTimerView.findViewById(R.id.ThursdayCheckBox)).isChecked();
-                        friday = ((CheckBox) setTimerView.findViewById(R.id.FridayCheckBox)).isChecked();
-                        saturday = ((CheckBox) setTimerView.findViewById(R.id.SaturdayCheckBox)).isChecked();
-                        sunday = ((CheckBox) setTimerView.findViewById(R.id.SundayCheckBox)).isChecked();
-                        hour00 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox00)).isChecked();
-                        hour01 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox01)).isChecked();
-                        hour02 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox02)).isChecked();
-                        hour03 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox03)).isChecked();
-                        hour04 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox04)).isChecked();
-                        hour05 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox05)).isChecked();
-                        hour06 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox06)).isChecked();
-                        hour07 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox07)).isChecked();
-                        hour08 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox08)).isChecked();
-                        hour09 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox09)).isChecked();
-                        hour10 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox10)).isChecked();
-                        hour11 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox11)).isChecked();
-                        hour12 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox12)).isChecked();
-                        hour13 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox13)).isChecked();
-                        hour14 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox14)).isChecked();
-                        hour15 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox15)).isChecked();
-                        hour16 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox16)).isChecked();
-                        hour17 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox17)).isChecked();
-                        hour18 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox18)).isChecked();
-                        hour19 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox19)).isChecked();
-                        hour20 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox20)).isChecked();
-                        hour21 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox21)).isChecked();
-                        hour22 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox22)).isChecked();
-                        hour23 = ((CheckBox) setTimerView.findViewById(R.id.CheckBox23)).isChecked();
-
-                        sharedPreferences.edit().putBoolean("monday", monday).apply();
-                        sharedPreferences.edit().putBoolean("tuesday", tuesday).apply();
-                        sharedPreferences.edit().putBoolean("wednesday", wednesday).apply();
-                        sharedPreferences.edit().putBoolean("thursday", thursday).apply();
-                        sharedPreferences.edit().putBoolean("friday", friday).apply();
-                        sharedPreferences.edit().putBoolean("saturday", saturday).apply();
-                        sharedPreferences.edit().putBoolean("sunday", sunday).apply();
-                        sharedPreferences.edit().putBoolean("hour00", hour00).apply();
-                        sharedPreferences.edit().putBoolean("hour01", hour01).apply();
-                        sharedPreferences.edit().putBoolean("hour02", hour02).apply();
-                        sharedPreferences.edit().putBoolean("hour03", hour03).apply();
-                        sharedPreferences.edit().putBoolean("hour04", hour04).apply();
-                        sharedPreferences.edit().putBoolean("hour05", hour05).apply();
-                        sharedPreferences.edit().putBoolean("hour06", hour06).apply();
-                        sharedPreferences.edit().putBoolean("hour07", hour07).apply();
-                        sharedPreferences.edit().putBoolean("hour08", hour08).apply();
-                        sharedPreferences.edit().putBoolean("hour09", hour09).apply();
-                        sharedPreferences.edit().putBoolean("hour10", hour10).apply();
-                        sharedPreferences.edit().putBoolean("hour11", hour11).apply();
-                        sharedPreferences.edit().putBoolean("hour12", hour12).apply();
-                        sharedPreferences.edit().putBoolean("hour13", hour13).apply();
-                        sharedPreferences.edit().putBoolean("hour14", hour14).apply();
-                        sharedPreferences.edit().putBoolean("hour15", hour15).apply();
-                        sharedPreferences.edit().putBoolean("hour16", hour16).apply();
-                        sharedPreferences.edit().putBoolean("hour17", hour17).apply();
-                        sharedPreferences.edit().putBoolean("hour18", hour18).apply();
-                        sharedPreferences.edit().putBoolean("hour19", hour19).apply();
-                        sharedPreferences.edit().putBoolean("hour20", hour20).apply();
-                        sharedPreferences.edit().putBoolean("hour21", hour21).apply();
-                        sharedPreferences.edit().putBoolean("hour22", hour22).apply();
-                        sharedPreferences.edit().putBoolean("hour23", hour23).apply();
-                        Toast.makeText(getApplicationContext(), R.string.timerSaved, Toast.LENGTH_SHORT).show();
+                        database.saveItem(
+                                new Item(
+                                        getNewRowid(),
+                                        ((EditText) addItemView.findViewById(R.id.newQuestion)).getText().toString(),
+                                        ((EditText) addItemView.findViewById(R.id.newAnswer)).getText().toString(),
+                                        new Category(0, "general")
+                                )
+                        );
+                        Log.i("Info", String.format("Question size: %d", questions.size()));
+                        updateItems();
+                        Toast.makeText(getApplicationContext(), R.string.itemAdded, Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)
                 .show();
     }
     private void showAboutAlert() {
-        /**
-         * TODO
-         */
         new AlertDialog.Builder(this)
                 .setIcon(android.R.drawable.ic_dialog_info)
                 .setTitle(R.string.aboutTitle)
@@ -300,9 +133,6 @@ public class Locker extends AppCompatActivity {
                 .show();
     }
     private void showEditItemAlert(final int position) {
-        /**
-         * TODO
-         */
         LayoutInflater layoutInflater = getLayoutInflater();
         final View editItemView = layoutInflater.inflate(R.layout.edit_item, null);
         final Item currentItem = items.get(position);
@@ -318,39 +148,26 @@ public class Locker extends AppCompatActivity {
                 .setPositiveButton(R.string.editItemPositiveButton, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
-                        try {
-                            editDatabase(
-                                    new Item(
-                                            currentItem.rowid,
-                                            ((EditText) editItemView.findViewById(R.id.editQuestion)).getText().toString(),
-                                            ((EditText) editItemView.findViewById(R.id.editAnswer)).getText().toString()
-                                    )
-                            );
-                            Log.i("Info", String.format("Question size: %d", questions.size()));
-                            updateItems();
-                            Toast.makeText(getApplicationContext(), R.string.itemEdited, Toast.LENGTH_SHORT).show();
-                        } catch (android.database.SQLException e) {
-                            e.printStackTrace();
-                            databaseError();
-                            Log.e("Error", e.getMessage());
-                            Toast.makeText(getApplicationContext(), R.string.itemEditFailed, Toast.LENGTH_SHORT).show();
-                        }
+                        database.editItem(
+                                new Item(
+                                        currentItem.rowid,
+                                        ((EditText) editItemView.findViewById(R.id.editQuestion)).getText().toString(),
+                                        ((EditText) editItemView.findViewById(R.id.editAnswer)).getText().toString(),
+                                        new Category(0, "general")
+                                )
+                        );
+                        Log.i("Info", String.format("Question size: %d", questions.size()));
+                        updateItems();
+                        Toast.makeText(getApplicationContext(), R.string.itemEdited, Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNeutralButton(R.string.deleteItem, new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int id) {
-                        try {
-                            deleteFromDatabase(currentItem.rowid);
-                            Log.i("Info", String.format("Question size: %d", questions.size()));
-                            updateItems();
-                            Toast.makeText(getApplicationContext(), R.string.itemDeleted, Toast.LENGTH_SHORT).show();
-                        } catch (android.database.SQLException e) {
-                            e.printStackTrace();
-                            databaseError();
-                            Log.e("Error", e.getMessage());
-                            Toast.makeText(getApplicationContext(), R.string.itemDeleteFailed, Toast.LENGTH_SHORT).show();
-                        }
+                        database.deleteItem(currentItem.rowid);
+                        Log.i("Info", String.format("Question size: %d", questions.size()));
+                        updateItems();
+                        Toast.makeText(getApplicationContext(), R.string.itemDeleted, Toast.LENGTH_SHORT).show();
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)
@@ -395,55 +212,18 @@ public class Locker extends AppCompatActivity {
     }
 
     private String exportItems() {
-        ArrayList<Item> arrayList = getItems();
+        ArrayList<Item> items = database.getItems();
         String csv = "question,answer\n";
 
-        for (Iterator<Item> iter = arrayList.iterator(); iter.hasNext(); ) {
-            Item item = iter.next();
+        for (Item item: items) {
             csv += String.format(Locale.US, "\"%s\",\"%s\"\n", item.question, item.answer);
         }
         return csv;
     }
-    private void insertIntoDatabase(Item item) {
-        /**
-         * TODO
-         */
-        database.execSQL(
-                String.format(
-                   Locale.US,
-                   "INSERT INTO items (rowid, question, answer) VALUES (%d, %s, %s)",
-                   item.rowid,
-                   DatabaseUtils.sqlEscapeString(item.question),
-                   DatabaseUtils.sqlEscapeString(item.answer)
-                )
-        );
-    }
-    private void editDatabase(Item item) {
-        /**
-         * TODO
-         */
-        database.execSQL(
-                String.format(
-                        Locale.US,
-                        "UPDATE items SET question = %s, answer = %s WHERE rowid = %d",
-                        DatabaseUtils.sqlEscapeString(item.question),
-                        DatabaseUtils.sqlEscapeString(item.answer),
-                        item.rowid
-                )
-        );
-    }
-    private void deleteFromDatabase(final int rowid) {
-        /**
-         * TODO
-         */
-        database.execSQL( String.format(Locale.US, "DELETE FROM items WHERE rowid = %d", rowid));
-    }
+
     private void updateItems() {
-        /**
-         * TODO
-         */
-        items = getItems();
-        questions = getQuestions();
+        items = database.getItems();
+        questions = getQuestions(items);
         ArrayAdapter<String> arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, questions);
         itemsListView.setAdapter(arrayAdapter);
         itemsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
@@ -461,155 +241,27 @@ public class Locker extends AppCompatActivity {
         });
     }
 
+    private ArrayList<String> getQuestions(ArrayList<Item> items) {
+        ArrayList<String> questions = new ArrayList<>();
+        for (Item item: items) {
+            questions.add(item.question);
+        }
+        return questions;
+    }
+
     private int getNewRowid() {
         /**
-         * TODO
+         * Finds a new unique id for a new entry.
          */
         int max = 0;
         int itemRowid;
-        for (int i = 0; i < items.size(); i++) {
-            itemRowid = items.get(i).rowid;
+        for (Item item: items) {
+            itemRowid = item.rowid;
             if (max < itemRowid) max = itemRowid;
         }
         return max + 1;
     }
 
-    protected void setDefaultSharedPreferences() {
-        /**
-         * TODO move this code to showSetTimerAlert
-         * TODO variables monday, ..., hour00,... are superfluous, get rid of them
-         */
-        sharedPreferences = this.getSharedPreferences("info.duskovi.pavel.memorylocker", Context.MODE_PRIVATE);
-        //set default values:
-        monday = sharedPreferences.getBoolean("monday", false);
-        tuesday = sharedPreferences.getBoolean("tuesday", false);
-        wednesday = sharedPreferences.getBoolean("wednesday", false);
-        thursday = sharedPreferences.getBoolean("thursday", false);
-        friday = sharedPreferences.getBoolean("friday", false);
-        saturday = sharedPreferences.getBoolean("saturday", false);
-        sunday = sharedPreferences.getBoolean("sunday", false);
-        hour00 = sharedPreferences.getBoolean("hour00", false);
-        hour01 = sharedPreferences.getBoolean("hour01", false);
-        hour02 = sharedPreferences.getBoolean("hour02", false);
-        hour03 = sharedPreferences.getBoolean("hour03", false);
-        hour04 = sharedPreferences.getBoolean("hour04", false);
-        hour05 = sharedPreferences.getBoolean("hour05", false);
-        hour06 = sharedPreferences.getBoolean("hour06", false);
-        hour07 = sharedPreferences.getBoolean("hour07", false);
-        hour08 = sharedPreferences.getBoolean("hour08", false);
-        hour09 = sharedPreferences.getBoolean("hour09", false);
-        hour10 = sharedPreferences.getBoolean("hour10", false);
-        hour11 = sharedPreferences.getBoolean("hour11", false);
-        hour12 = sharedPreferences.getBoolean("hour12", false);
-        hour13 = sharedPreferences.getBoolean("hour13", false);
-        hour14 = sharedPreferences.getBoolean("hour14", false);
-        hour15 = sharedPreferences.getBoolean("hour15", false);
-        hour16 = sharedPreferences.getBoolean("hour16", false);
-        hour17 = sharedPreferences.getBoolean("hour17", false);
-        hour18 = sharedPreferences.getBoolean("hour18", false);
-        hour19 = sharedPreferences.getBoolean("hour19", false);
-        hour20 = sharedPreferences.getBoolean("hour20", false);
-        hour21 = sharedPreferences.getBoolean("hour21", false);
-        hour22 = sharedPreferences.getBoolean("hour22", false);
-        hour23 = sharedPreferences.getBoolean("hour23", false);
-    }
-
-    private ArrayList<Item> getItems() {
-        /**
-         * TODO
-         */
-        ArrayList<Item> itemsArrayList = new ArrayList<>();
-        Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
-        int questionIndex = c.getColumnIndex("question");
-        int answerIndex = c.getColumnIndex("answer");
-        int rowidIndex = c.getColumnIndex("rowid");
-
-        for (int i = 0; i < c.getCount(); i++) {
-            c.moveToPosition(i);
-            item = new Item(c.getInt(rowidIndex), c.getString(questionIndex), c.getString(answerIndex));
-            itemsArrayList.add(item);
-        }
-        Log.i("Info", String.format("Items length: %d", itemsArrayList.size()) );
-        c.close();
-        return itemsArrayList;
-    }
-    private ArrayList<String> getQuestions() {
-        /**
-         * TODO
-         */
-        ArrayList<String> questionsArrayList = new ArrayList<>();
-        Cursor c = database.rawQuery("SELECT rowid, * FROM items", null);
-        int questionIndex = c.getColumnIndex("question");
-        int answerIndex = c.getColumnIndex("answer");
-        int rowidIndex = c.getColumnIndex("rowid");
-
-        for (int i = 0; i < c.getCount(); i++) {
-            c.moveToPosition(i);
-            item = new Item(c.getInt(rowidIndex), c.getString(questionIndex), c.getString(answerIndex));
-            questionsArrayList.add(item.question);
-        }
-        Log.i("Info", String.format("Questions length: %d", questionsArrayList.size()) );
-        c.close();
-        return questionsArrayList;
-    }
-    private void databaseStartValues() {
-        /**
-         * TODO
-         */
-        //database.execSQL("INSERT INTO items (question, answer) VALUES ('milost (DE)', 'die Gnade')");
-        //database.execSQL("INSERT INTO items (question, answer) VALUES ('blud (EN)', 'fallacy')");
-        //database.execSQL("INSERT INTO items (question, answer) VALUES ('troufalost (EN)', 'audacity')");
-        /*
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠁', 'A')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠃', 'B')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠉', 'C')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠙', 'D')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠑', 'E')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠋', 'F')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠛', 'G')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠓', 'H')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠊', 'I')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠚', 'J')");
-
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠅', 'K')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠇', 'L')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠍', 'M')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠝', 'N')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠕', 'O')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠏', 'P')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠟', 'Q')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠗', 'R')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠎', 'S')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠞', 'T')");
-
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠥', 'U')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠧', 'V')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠭', 'X')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠽', 'Y')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('⠵', 'Z')");
-        */
-        //database.execSQL("INSERT INTO items (question, answer) VALUES ('', '')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Matouš 22:34-38', '34 Když se farizeové doslechli, že umlčel saduceje, smluvili se 35 a jeden jejich zákoník se ho otázal,\n" +
-                "aby ho pokoušel: 36 \"Mistře, které přikázání v zákoně je největší?\" 37 On mu řekl: \"`Miluj Hospodina,\n" +
-                "Boha svého, celým svým srdcem, celou svou duší a celou svou myslí. ́ 38 To je největší a první\n" +
-                "přikázání.')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('2 Timoteovi 3:16-17', '16 Veškeré Písmo pochází z Božího Ducha a je dobré k učení, k usvědčování, k nápravě, k výchově ve\n" +
-                "spravedlnosti, 17 aby Boží člověk byl náležitě připraven ke každému dobrému činu')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Jozue 1:8', 'Kniha tohoto zákona ať se nevzdálí od tvých úst. Rozjímej nad ním ve dne v noci, abys mohl bedlivě plnit\n" +
-                "vše, co je v něm zapsáno. Potom tě bude na tvé cestě provázet zdar, potom budeš jednat prozíravě.')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Jan 16:24', 'Až dosud jste o nic neprosili v mém jménu. Proste a dostanete, aby vaše radost byla plná.')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Filipským 4:6-7', '6 Netrapte se žádnou starostí, ale v každé modlitbě a prosbě děkujte a předkládejte své žádosti Bohu. 7 A\n" +
-                "pokoj Boží, převyšující každé pomyšlení, bude střežit vaše srdce i mysl v Kristu Ježíši.')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Jakub 1:22', 'Podle slova však také jednejte, nebuďte jen posluchači – to byste klamali sami sebe!')");
-        database.execSQL("INSERT INTO items (question, answer) VALUES ('Židům 12:11', 'Přísná výchova se ovšem v tu chvíli nikdy nezdá příjemná, nýbrž krušná, později však přináší ovoce pokoje\n" +
-                "a spravedlnost těm, kdo jí prošli.')");
-    }
-    private void databaseError() {
-        /**
-         * TODO
-         */
-        if (database.isOpen()) database.close();
-    }
     /**
      * ATTENTION: This was auto-generated to implement the App Indexing API.
      * See https://g.co/AppIndexing/AndroidStudio for more information.
